@@ -1,30 +1,107 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
-import 'package:cfm/main.dart';
+import 'package:cfm/player/player_status.dart';
+
+YoutubePlayerValue _value(
+  PlayerState state, {
+  YoutubeError error = YoutubeError.none,
+}) => YoutubePlayerValue(playerState: state, error: error);
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('PlayerStatus.from while tuning in', () {
+    test(
+      'loading states stay "tuning" instead of flipping to idle/stopped',
+      () {
+        for (final state in [
+          PlayerState.unknown,
+          PlayerState.unStarted,
+          PlayerState.cued,
+          PlayerState.paused,
+        ]) {
+          expect(
+            PlayerStatus.from(_value(state), tuningIn: true),
+            PlayerStatus.tuning,
+            reason: '$state',
+          );
+        }
+      },
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    test('ignores the error left over from before the retry', () {
+      expect(
+        PlayerStatus.from(
+          _value(PlayerState.unStarted, error: YoutubeError.html5Error),
+          tuningIn: true,
+          staleError: YoutubeError.html5Error,
+        ),
+        PlayerStatus.tuning,
+      );
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    test('a new error still shows', () {
+      expect(
+        PlayerStatus.from(
+          _value(PlayerState.unStarted, error: YoutubeError.notEmbeddable),
+          tuningIn: true,
+          staleError: YoutubeError.html5Error,
+        ),
+        PlayerStatus.error,
+      );
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('playing goes on air', () {
+      expect(
+        PlayerStatus.from(_value(PlayerState.playing), tuningIn: true),
+        PlayerStatus.onAir,
+      );
+    });
+  });
+
+  group('PlayerStatus.from', () {
+    test('before playback is idle', () {
+      expect(PlayerStatus.from(_value(PlayerState.unknown)), PlayerStatus.idle);
+      expect(PlayerStatus.from(_value(PlayerState.cued)), PlayerStatus.idle);
+    });
+
+    test('maps playing and buffering to active states', () {
+      expect(
+        PlayerStatus.from(_value(PlayerState.playing)),
+        PlayerStatus.onAir,
+      );
+      expect(
+        PlayerStatus.from(_value(PlayerState.buffering)),
+        PlayerStatus.tuning,
+      );
+      expect(PlayerStatus.onAir.isActive, isTrue);
+      expect(PlayerStatus.tuning.isActive, isTrue);
+    });
+
+    test('paused or ended is stopped', () {
+      expect(
+        PlayerStatus.from(_value(PlayerState.paused)),
+        PlayerStatus.stopped,
+      );
+      expect(
+        PlayerStatus.from(_value(PlayerState.ended)),
+        PlayerStatus.stopped,
+      );
+      expect(PlayerStatus.stopped.isActive, isFalse);
+    });
+
+    test('reports errors unless the stream is playing again', () {
+      expect(
+        PlayerStatus.from(
+          _value(PlayerState.unStarted, error: YoutubeError.html5Error),
+        ),
+        PlayerStatus.error,
+      );
+      expect(
+        PlayerStatus.from(
+          _value(PlayerState.playing, error: YoutubeError.html5Error),
+        ),
+        PlayerStatus.onAir,
+      );
+    });
   });
 }
