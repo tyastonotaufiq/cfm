@@ -8,6 +8,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import '../app/theme.dart';
+import 'picture_in_picture.dart';
 import 'player_status.dart';
 import 'station.dart';
 import 'widgets/ascii_spinner.dart';
@@ -23,7 +24,8 @@ class PlayerScreen extends StatefulWidget {
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
 
-class _PlayerScreenState extends State<PlayerScreen> {
+class _PlayerScreenState extends State<PlayerScreen>
+    with WidgetsBindingObserver {
   late final YoutubePlayerController _controller;
   late final StreamSubscription<YoutubePlayerValue> _playerEvents;
 
@@ -33,10 +35,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _keepAwake = true;
   bool _wakelockHeld = false;
   final _playerKey = GlobalKey(debugLabel: 'player');
+  final _pip = PictureInPicture();
 
   /// iOS only lets the hardware buttons change media volume, so the YouTube
   /// player ignores setVolume there (in the app and in mobile Safari).
   bool get _canSetVolume => defaultTargetPlatform != TargetPlatform.iOS;
+
+  bool get _isMobile =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   bool get _hasKeyboard =>
       kIsWeb ||
@@ -63,10 +71,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
       ),
     );
     _playerEvents = _controller.stream.listen(_onPlayerValue);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pip.dispose();
     _tuneInTimeout?.cancel();
     _playerEvents.cancel();
     if (_wakelockHeld) unawaited(WakelockPlus.disable());
@@ -96,6 +107,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (next == _status) return;
     setState(() => _status = next);
     _syncWakelock();
+    unawaited(_pip.setEnabled(next.isActive));
+  }
+
+  /// YouTube's embedded player must stay visible while it plays. On phones,
+  /// "hidden" means the app is fully in the background: the PiP window was
+  /// closed, the screen locked, or PiP is off for this app. (Inside the PiP
+  /// window the app is only "inactive", so the music keeps going there.)
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final backgrounded =
+        state == AppLifecycleState.hidden || state == AppLifecycleState.paused;
+    if (_isMobile && backgrounded && _status.isActive) _stop();
   }
 
   void _endTuneIn() {
@@ -150,6 +173,25 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: _pip.active,
+      builder: (context, inPip, _) {
+        // Android shrinks the window a moment before it reports PiP, so a
+        // tiny window gets the video-only layout too (otherwise the
+        // controls overflow for a frame).
+        final size = MediaQuery.sizeOf(context);
+        final tiny = size.width < 320 || size.height < 240;
+        return inPip || tiny
+            ? Scaffold(
+                backgroundColor: Colors.black,
+                body: Center(child: _player),
+              )
+            : _buildApp(context);
+      },
+    );
+  }
+
+  Widget _buildApp(BuildContext context) {
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.space): _togglePlayback,

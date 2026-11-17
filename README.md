@@ -25,6 +25,10 @@ stream.
   start within 20 seconds, it shows an error with a hint to retry.
 - **Volume bars.** Tap or drag to set the volume, or use the arrow keys after
   tabbing to it. A mute button sits next to it.
+- **Picture-in-picture on Android.** While music is playing, pressing Home or
+  switching apps shrinks CFM into a floating video window and the music keeps
+  going. Tap the window to come back, or drag it away to close it, which stops
+  the music.
 - **Keep screen awake** (coffee cup button). Stops the screen from sleeping
   while music is playing.
 - **Space bar** plays and stops on desktop and web.
@@ -39,10 +43,10 @@ stream.
 
 | Platform | Status |
 | --- | --- |
-| Android | ✅ Tested on a Pixel 8 (Android 17) |
+| Android | ✅ Tested on a Pixel 8 (Android 17), including picture-in-picture |
 | macOS | ✅ Tested |
 | Web | ✅ Tested in Chrome |
-| iOS | Should work, not tested yet. The volume bars are replaced by "use the volume buttons", because iOS only allows hardware volume for embedded video |
+| iOS | Should work, not tested yet. No picture-in-picture: iOS can't put the embedded YouTube player into PiP. The volume bars are replaced by "use the volume buttons", because iOS only allows hardware volume for embedded video |
 | Windows / Linux | ❌ Not supported: the embedded web view this player needs isn't available there |
 
 ## How it works and its limits
@@ -53,9 +57,11 @@ with YouTube's own controls hidden and the app's controls on top. This
 follows YouTube's Terms of Service, which forbid pulling out the audio stream
 or hiding the video. That also means:
 
-- **No background playback.** On phones the music stops when the app is in
-  the background or the screen locks. This is YouTube's rule for embedded
-  players. Keep the coffee-cup toggle on during long sessions.
+- **No audio-only background playback.** On Android, picture-in-picture
+  keeps the music going while you use other apps, because the video stays
+  visible. When the app is fully hidden (the PiP window is closed or the
+  screen locks), the music stops. That's YouTube's rule for embedded players.
+  Keep the coffee-cup toggle on during long sessions.
 - **No track list or seeking.** It's a live stream. The current song title is
   drawn inside the video, so the app can't read it as text.
 
@@ -88,6 +94,7 @@ lib/
     ├── station.dart           # The stream to play (YouTube video ID, name)
     ├── player_status.dart     # YouTube player state → idle / tuning / on air / stopped / error
     ├── player_screen.dart     # Main screen, wide and portrait layouts
+    ├── picture_in_picture.dart # Android PiP bridge (native side in MainActivity.kt)
     └── widgets/
         ├── live_badge.dart    # Pulsing ● LIVE tag
         ├── volume_meter.dart  # Rising-bar volume control
