@@ -104,6 +104,12 @@ lib/
 To point the app at a different YouTube live stream, change `videoId` in
 `lib/player/station.dart`.
 
+## To do
+
+- [ ] **App icon.** Replace Flutter's default icon with a CFM icon in the
+  app's style, for macOS, Android, iOS and web (browser-tab favicon and
+  install icons).
+
 ## Disclaimer
 
 This is an unofficial, personal project. The Claude FM stream, the "Claude"
