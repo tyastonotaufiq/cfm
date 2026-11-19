@@ -20,8 +20,9 @@ stream.
   switching apps shrinks CFM into a floating video window and the music keeps
   going. Tap the window to come back, or drag it away to close it, which stops
   the music.
-- **Keep screen awake** (coffee cup button). Stops the screen from sleeping
-  while music is playing.
+- **Screen stays awake while music plays.** On Android, macOS and web the
+  system does this by itself while the video plays. On iOS there's a coffee
+  cup button for it.
 - **Space bar** plays and stops on desktop and web.
 - **Layouts that fit the screen.**
   - Desktop, tablet and web: the video is sized so the controls are always
@@ -37,7 +38,7 @@ stream.
 | Android | ✅ Tested on a Pixel 8 (Android 17), including picture-in-picture |
 | macOS | ✅ Tested |
 | Web | ✅ Tested in Chrome |
-| iOS | Should work, not tested yet. No picture-in-picture: iOS can't put the embedded YouTube player into PiP. The volume bars are replaced by "use the volume buttons", because iOS only allows hardware volume for embedded video |
+| iOS | ✅ Tested in the simulator (iPhone Air, iOS 27). No picture-in-picture: iOS can't put the embedded YouTube player into PiP. No volume bars, only mute: iOS only lets the hardware buttons change the volume of embedded video |
 | Windows / Linux | ❌ Not supported: the embedded web view this player needs isn't available there |
 
 ## How it works and its limits
@@ -54,7 +55,6 @@ or hiding the video. That also means:
   keeps the music going while you use other apps, because the video stays
   visible. When the app is fully hidden (the PiP window is closed or the
   screen locks), the music stops. That's YouTube's rule for embedded players.
-  Keep the coffee-cup toggle on during long sessions.
 - **No track list or seeking.** It's a live stream. The current song title is
   drawn inside the video, so the app can't read it as text.
 
@@ -96,12 +96,6 @@ lib/
 
 To point the app at a different YouTube live stream, change `videoId` in
 `lib/player/station.dart`.
-
-## To do
-
-- [ ] **App icon.** Replace Flutter's default icon with a CFM icon in the
-  app's style, for macOS, Android, iOS and web (browser-tab favicon and
-  install icons).
 
 ## Disclaimer
 

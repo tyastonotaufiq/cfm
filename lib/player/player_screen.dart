@@ -41,6 +41,12 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// player ignores setVolume there (in the app and in mobile Safari).
   bool get _canSetVolume => defaultTargetPlatform != TargetPlatform.iOS;
 
+  /// On Android, macOS and web, the web view or browser already keeps the
+  /// display awake while the video plays, so the keep-awake toggle would do
+  /// nothing there.
+  bool get _hasKeepAwake =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
   bool get _isMobile =>
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
@@ -165,7 +171,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   }
 
   void _syncWakelock() {
-    final want = _keepAwake && _status.isActive;
+    final want = _hasKeepAwake && _keepAwake && _status.isActive;
     if (want == _wakelockHeld) return;
     _wakelockHeld = want;
     unawaited(WakelockPlus.toggle(enable: want));
@@ -344,9 +350,6 @@ class _PlayerScreenState extends State<PlayerScreen>
   }
 
   Widget _buildControls(BuildContext context) {
-    final muted = Theme.of(context).textTheme.bodySmall
-        ?.copyWith(color: CfmColors.inkMuted);
-
     return Row(
       children: [
         IconButton.filled(
@@ -372,20 +375,24 @@ class _PlayerScreenState extends State<PlayerScreen>
                 : Icons.volume_up_rounded,
           ),
         ),
+        // iOS has no volume bars: only the hardware buttons change the volume.
         if (_canSetVolume)
-          VolumeMeter(volume: _volume, muted: _muted, onChanged: _setVolume)
-        else
-          Flexible(child: Text('use the volume buttons', style: muted)),
-        const SizedBox(width: 8),
-        IconButton(
-          onPressed: _toggleKeepAwake,
-          isSelected: _keepAwake,
-          tooltip: _keepAwake
-              ? 'Keeping screen awake while playing'
-              : 'Screen may sleep while playing',
-          icon: const Icon(Icons.coffee_outlined, color: CfmColors.inkMuted),
-          selectedIcon: const Icon(Icons.coffee_rounded, color: CfmColors.ink),
-        ),
+          VolumeMeter(volume: _volume, muted: _muted, onChanged: _setVolume),
+        if (_hasKeepAwake) ...[
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: _toggleKeepAwake,
+            isSelected: _keepAwake,
+            tooltip: _keepAwake
+                ? 'Keeping screen awake while playing'
+                : 'Screen may sleep while playing',
+            icon: const Icon(Icons.coffee_outlined, color: CfmColors.inkMuted),
+            selectedIcon: const Icon(
+              Icons.coffee_rounded,
+              color: CfmColors.ink,
+            ),
+          ),
+        ],
       ],
     );
   }
