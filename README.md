@@ -5,16 +5,7 @@ A small Flutter radio player for the **Claude FM** 24/7 YouTube live stream
 official embedded player, in a retro ASCII-style design that matches the
 stream.
 
-<table>
-  <tr>
-    <td valign="top"><img src="docs/screenshots/macos.png" alt="CFM on macOS, playing the live stream" width="560"></td>
-    <td valign="top"><img src="docs/screenshots/android.png" alt="CFM on an Android phone, playing the live stream" width="240"></td>
-  </tr>
-  <tr>
-    <td align="center">macOS</td>
-    <td align="center">Android (Pixel 8)</td>
-  </tr>
-</table>
+![CFM full screen on macOS, playing the live stream](docs/images/screenshot.png)
 
 ## Features
 
@@ -51,9 +42,11 @@ stream.
 
 ## How it works and its limits
 
-The app uses the official YouTube IFrame player through
-[`youtube_player_iframe`](https://pub.dev/packages/youtube_player_iframe),
-with YouTube's own controls hidden and the app's controls on top. This
+The app plays the stream in YouTube's official IFrame player, through
+[`youtube_player_iframe`](https://pub.dev/packages/youtube_player_iframe), a
+community package (not made by Google or YouTube). The package loads
+YouTube's own player script in a web view and lets the app control it from
+Dart. YouTube's controls are hidden and the app's controls sit on top. This
 follows YouTube's Terms of Service, which forbid pulling out the audio stream
 or hiding the video. That also means:
 
